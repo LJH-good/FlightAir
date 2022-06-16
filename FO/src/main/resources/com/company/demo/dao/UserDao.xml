@@ -1,0 +1,204 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.company.demo.dao.UserDao">
+
+	<!-- 아이디 중복 검사 -->
+	<select id="idCheck" resultType="com.company.dto.UserDto">
+   		SELECT email
+   		  FROM user 
+   		 WHERE email = #{email}
+    </select>
+   
+    <!-- 회원 가입 -->
+    <insert id="insertUser">
+   		INSERT INTO user
+   		(
+   			user_name
+   		  , surname
+   		  , name
+   		  , birthday
+   		  , pass_num
+		  , email
+		  , password
+		  , post
+		  , addr1
+		  , addr2
+		  , phone
+		) 
+		VALUES
+		(
+		 	#{user_name}
+		  , #{surname}
+		  , #{name}
+		  , #{birthday}
+		  , #{pass_num}
+		  , #{email}
+		  , #{password}
+		  , #{post}
+		  , #{addr1}
+		  , #{addr2}
+		  , #{phone}
+		) 
+    </insert> 
+   
+    <!-- 로그인 -->
+    <select id="login" resultType="com.company.dto.UserDto">
+   		SELECT email
+   			 , password 
+   		  FROM user 
+   		 WHERE email = #{email}
+    </select>
+   
+    <!-- 아이디 찾기 -->
+    <select id="FindId" resultType="com.company.dto.UserDto">
+   		SELECT email 
+   		  FROM user 
+   		 WHERE user_name=#{user_name} 
+   		   AND phone=#{phone}
+    </select>
+   
+    <!-- 비밀번호 찾기 -->
+    <select id="FindPassword" resultType="com.company.dto.UserDto">
+   		SELECT email 
+   		  FROM user 
+   		 WHERE user_name = #{user_name} 
+   		   AND email = #{email}
+   		   AND phone = #{phone} 
+    </select>
+   
+    <!-- 비밀번호 변경 -->
+    <update id="changepassword">
+   		UPDATE user 
+   		   SET password = #{password}
+   		   	 , recent_update = CURRENT_TIMESTAMP
+   		 WHERE email = #{email}
+    </update>
+   
+    <!-- 회원 정보 수정 -->
+    <update id="updateinfo">
+   		UPDATE user 
+   		   SET pass_num = #{pass_num}  
+   		     , phone = #{phone}
+   		   	 , post = #{post}
+   		   	 , addr1 = #{addr1}
+   		   	 , addr2 = #{addr2}
+   		   	 , recent_update = CURRENT_TIMESTAMP
+   		 WHERE email = #{email}
+    </update>
+   
+    <!-- 마이페이지 로그인 -->
+    <select id="mypagelogin" resultType="com.company.dto.UserDto">
+   		SELECT email
+   			 , password
+   	      FROM user 
+   	     WHERE email = #{email}
+    </select>
+   
+    <!-- 회원 정보 조회 -->
+    <select id="userinfo" resultType="com.company.dto.UserDto">
+   		SELECT email
+   			 , user_name
+   			 , surname
+   			 , name 
+   			 , birthday
+   			 , pass_num
+   			 , email
+   			 , post
+   			 , addr1
+   			 , addr2
+   			 , phone
+   			 , recent_update
+   		  FROM user 
+   		 WHERE email = #{email}
+    </select>
+   
+    <!-- 회원 탈퇴 -->
+    <delete id="deleteuser">
+   		DELETE FROM user 
+   		 WHERE email = #{email}
+    </delete>
+   
+    <!-- 기존 비밀번호 확인 -->
+    <select id="oripass" resultType="com.company.dto.UserDto">
+   		SELECT email
+   			 , password
+   	      FROM user 
+   	     WHERE email = #{email}
+    </select>
+   
+    <!-- 비밀번호 변경 -->
+    <update id="updatepassword">
+   		UPDATE user 
+   		   SET password = #{password}
+   		     , recent_update = CURRENT_TIMESTAMP 
+   		 WHERE email = #{email}
+    </update>
+    
+    <!-- 회원 삭제 시 진행 중인 예약 확인 -->
+    <select id="deletereservation" resultType="int">
+    	SELECT COUNT(*)  
+    	  FROM reservation rs
+    	  	   JOIN flight_schedule fs
+    	  	   ON rs.go_schedule = fs.schedule_num
+    	 WHERE rs.email = #{email}
+    	   AND rs.cancellation = "N"
+    	   AND rs.state != "스케쥴 취소로 인한 취소"
+    	   AND rs.state != "예약정보상이로 인한 취소"
+    	   AND fs.schedule_num IN (SELECT schedule_num 
+    	   							 FROM flight_schedule 
+    	   							WHERE state = "정상")
+    	   AND fs.de_date >= DATE_FORMAT(now(), '%Y-%m-%d')
+    </select>
+    
+    <!-- 상담 글 등록 -->
+    <insert id="insertqna">
+   		INSERT INTO qna
+   		(
+   			email
+		  , category
+		  , title
+		  , content
+		) 
+		VALUES
+		(
+		 	#{email}
+		  , #{category}
+		  , #{title}
+		  , #{content}
+		) 
+    </insert> 
+    
+    <!-- 상담 글 목록 -->
+    <select id = "qnanumber" resultType = "com.company.dto.QnADto">
+   	   SELECT board_num
+   	   		, category
+   	   		, title 
+   	   		, content
+   	   		, answer
+   	   		, date
+   	     FROM qna 
+   	    WHERE email = #{email}
+   	      AND cancellation = "N"
+    </select>
+   
+    <!-- 상담 글 상세 -->
+    <select id = "qnadetail" resultType = "com.company.dto.QnADto">
+   	   SELECT category
+   	   		, title 
+   	   		, content
+   	   		, answer
+   	   		, date
+   	     FROM qna 
+   	    WHERE board_num = #{board_num}
+    </select>
+   
+    <!-- 상담 글 삭제 -->
+    <update id="deleteqna">
+   		UPDATE qna 
+   		   SET cancellation = "Y"
+   		 WHERE board_num = #{board_num}
+    </update>
+   
+</mapper>

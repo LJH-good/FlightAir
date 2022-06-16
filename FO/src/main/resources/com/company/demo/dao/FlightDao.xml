@@ -1,0 +1,407 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.company.demo.dao.FlightDao">
+   
+   <!-- 스케줄 조회 - 출발나라 -->
+   <select id = "schedule" resultType = "com.company.dto.FlightScheduleDto">
+   		SELECT de_country 
+   		  FROM flight_schedule 
+   		 WHERE state = "정상" 
+   	  GROUP BY de_country 
+   </select>
+   
+   <!-- 스케줄 조회 - 도착나라 -->
+   <select id = "schedule2" resultType = "com.company.dto.FlightScheduleDto">
+   		SELECT arr_country
+   		  FROM flight_schedule 
+   		 WHERE state = "정상" 
+   	  GROUP BY arr_country 
+   </select>
+   
+   <!-- 스케줄 조회 - 가는 편 -->
+   <select id = "searchdeparture" resultType = "com.company.dto.SchedulePriceDto">
+   	   SELECT fs.schedule_num
+   	   		, fs.de_country
+   	   		, fs.arr_country
+   	   		, fs.de_time
+   	   		, fs.arr_time
+   	   		, fs.flight_time
+   	   		, fs.de_date
+   	   		, fs.plane_num
+   	   		, p.price
+   	   		, p.seat_class
+   	     FROM flight_schedule fs 
+   	     	  JOIN price p 
+   	          USING(schedule_num) 
+   	    WHERE fs.de_country = #{de_country} 
+   	      AND fs.arr_country = #{arr_country} 
+   	      AND fs.de_date = #{de_date}
+   	      <if test='isToday == "Y"'>
+   	      AND fs.de_time > DATE_FORMAT(now(), '%H:%i')
+   	      </if>
+   	      AND fs.state = "정상" 
+   	      <![CDATA[
+          AND 
+			(
+				(
+           	   		p.seat_class = "비즈니스" 
+               	AND (SELECT SUM(spare.cnt)
+               		  FROM
+               		  	  (
+               		  	  	SELECT COUNT(*) AS cnt
+					  		  FROM reservation 
+					 		 WHERE go_schedule IN (SELECT schedule_num 
+					 								 FROM flight_schedule 
+					 					   			WHERE de_country = #{de_country}
+											      	  AND arr_country = #{arr_country}
+											 		  AND de_date = #{de_date}
+											 		  AND state = "정상")
+							   AND go_seat_class = "비즈니스"
+     				  		   AND cancellation = "N"
+					  		   AND state != "예약정보상이로 인한 취소"
+					  		   AND state != "스케쥴 취소로 인한 취소"
+     				  		 UNION ALL 
+     				  		SELECT COUNT(*) AS cnt
+					  		  FROM reservation 
+					 		 WHERE back_schedule IN (SELECT schedule_num 
+					 									FROM flight_schedule 
+					 					   			   WHERE de_country = #{de_country}
+											      		 AND arr_country = #{arr_country}
+											 			 AND de_date = #{de_date}
+											 			 AND state = "정상")
+							   AND back_seat_class = "비즈니스"
+     				  		   AND cancellation = "N"
+					  		   AND state != "예약정보상이로 인한 취소"
+					  		   AND state != "스케쥴 취소로 인한 취소"
+     				  		) spare ) < (SELECT first_capacity 
+					  		  FROM plane 
+					  		 WHERE plane_num IN (SELECT plane_num 
+					  							   FROM flight_schedule 
+					  							  WHERE de_country = #{de_country} 
+					  								AND arr_country = #{arr_country} 
+					  								AND de_date = #{de_date} 
+					  								AND state = "정상")
+					  		)
+				)
+				OR 
+				(
+					p.seat_class = "이코노미"
+			  	AND (SELECT SUM(spare.cnt)
+               		   FROM
+               		  	  (
+               		  	  	SELECT COUNT(*) AS cnt
+					  		  FROM reservation 
+					 		 WHERE go_schedule IN (SELECT schedule_num 
+					 								 FROM flight_schedule 
+					 					   			WHERE de_country = #{de_country}
+											      	  AND arr_country = #{arr_country}
+											 		  AND de_date = #{de_date}
+											 		  AND state = "정상")
+							   AND go_seat_class = "이코노미"
+     				  		   AND cancellation = "N"
+					  		   AND state != "예약정보상이로 인한 취소"
+					  		   AND state != "스케쥴 취소로 인한 취소"
+     				  		 UNION ALL 
+     				  		SELECT COUNT(*) AS cnt
+					  		  FROM reservation 
+					 		 WHERE back_schedule IN (SELECT schedule_num 
+					 								   FROM flight_schedule 
+					 					   			   WHERE de_country = #{de_country}
+											      		 AND arr_country = #{arr_country}
+											 			 AND de_date = #{de_date}
+											 			 AND state = "정상")
+							   AND back_seat_class = "이코노미"
+     				  		   AND cancellation = "N"
+					  		   AND state != "예약정보상이로 인한 취소"
+					  		   AND state != "스케쥴 취소로 인한 취소"
+     				  		) spare) < (SELECT second_capacity 
+			  		 					  FROM plane 
+			  		 					 WHERE plane_num IN (SELECT plane_num 
+			  		 					  FROM flight_schedule 
+			  		 					 WHERE de_country = #{de_country} 
+			  		 					   AND arr_country = #{arr_country} 
+			  		 					   AND de_date = #{de_date} 
+			  		 					   AND state = "정상")
+			  		 					)
+				)
+			)
+   		]]>
+   </select>
+   
+   <!-- 스케줄 조회 - 오는 편 -->
+   <select id = "searchdeparture2" resultType = "com.company.dto.SchedulePriceDto">
+       SELECT fs.schedule_num
+    		, fs.de_country
+   	   		, fs.arr_country
+   	   		, fs.de_time
+   	   		, fs.arr_time
+   	   		, fs.flight_time
+   	   		, fs.de_date
+   	   		, fs.plane_num
+   	   		, p.price
+   	   		, p.seat_class
+   	     FROM flight_schedule fs 
+   	     	  JOIN price p 
+   	          USING(schedule_num) 
+   	    WHERE fs.de_country = #{de_country} 
+   	      AND fs.arr_country = #{arr_country} 
+   	      AND fs.de_date = #{de_date}
+   	      <if test='isToday == "Y"'>
+   	      AND fs.de_time > DATE_FORMAT(now(), '%H:%i')
+   	      </if>  
+   	      AND fs.state = "정상"
+   	      <![CDATA[
+		AND 
+       	  (
+           	   (
+           	   		p.seat_class = "비즈니스" 
+               		AND (SELECT SUM(spare.cnt)
+               		  	   FROM
+               		  	   (
+               		  	  	SELECT COUNT(*) AS cnt
+					  		  FROM reservation 
+					 		 WHERE go_schedule IN (SELECT schedule_num 
+					 								 FROM flight_schedule 
+					 					   		  	 WHERE de_country = #{de_country}
+											      	   AND arr_country = #{arr_country}
+											 		   AND de_date = #{de_date}
+											 		   AND state = "정상")
+							   AND go_seat_class = "비즈니스"
+     				  		   AND cancellation = "N"
+					  		   AND state != "예약정보상이로 인한 취소"
+					  		   AND state != "스케쥴 취소로 인한 취소"
+     				  		 UNION ALL 
+     				  		SELECT COUNT(*) AS cnt
+					  		  FROM reservation 
+					 		 WHERE back_schedule IN (SELECT schedule_num 
+					 								   FROM flight_schedule 
+					 					   			  WHERE de_country = #{de_country}
+											      		AND arr_country = #{arr_country}
+											 			AND de_date = #{de_date}
+											 			AND state = "정상")
+							   AND back_seat_class = "비즈니스"
+     				  		   AND cancellation = "N"
+					  		   AND state != "예약정보상이로 인한 취소"
+					  		   AND state != "스케쥴 취소로 인한 취소"
+     				  
+     				  		) spare) < (SELECT first_capacity 
+					  					  FROM plane 
+					  					 WHERE plane_num IN (SELECT plane_num 
+					  					  FROM flight_schedule 
+					  					 WHERE de_country = #{de_country} 
+					  					   AND arr_country = #{arr_country} 
+					  					   AND de_date = #{de_date} 
+					  					   AND state = "정상"))
+			)
+		   OR 
+			(
+				p.seat_class = "이코노미"
+				AND (SELECT SUM(spare.cnt)
+               		   FROM
+               		  	  (
+               		  	  	SELECT COUNT(*) AS cnt
+					  		  FROM reservation 
+					 		 WHERE go_schedule IN (SELECT schedule_num 
+					 								 FROM flight_schedule 
+					 					   			WHERE de_country = #{de_country}
+											      	  AND arr_country = #{arr_country}
+											 		  AND de_date = #{de_date}
+											 		  AND state = "정상")
+							   AND go_seat_class = "이코노미"
+     				  		   AND cancellation = "N"
+					  		   AND state != "예약정보상이로 인한 취소"
+					  		   AND state != "스케쥴 취소로 인한 취소"
+     				  		 UNION ALL 
+     				  		SELECT COUNT(*) AS cnt
+					  	      FROM reservation 
+					 		 WHERE back_schedule IN (SELECT schedule_num 
+					 									FROM flight_schedule 
+					 					   			   WHERE de_country = #{de_country}
+											      		 AND arr_country = #{arr_country}
+											 		  	 AND de_date = #{de_date}
+											 			 AND state = "정상")
+							   AND back_seat_class = "이코노미"
+     				  		   AND cancellation = "N"
+					  		   AND state != "예약정보상이로 인한 취소"
+					  		   AND state != "스케쥴 취소로 인한 취소"
+     				  		) spare) < (SELECT second_capacity 
+			  		 					  FROM plane 
+			  		 					 WHERE plane_num IN (SELECT plane_num 
+			  		 									   	   FROM flight_schedule 
+			  		 									   	  WHERE de_country = #{de_country} 
+			  		 									   	    AND arr_country = #{arr_country} 
+			  		 									   		AND de_date = #{de_date} 
+			  		 									   		AND state = "정상"))
+			)
+		)
+   ]]>
+   </select>
+   
+   <!-- 잔여석 조회 -->
+   <select id = "spareseat" resultType = "int">
+   	   SELECT SUM(spare.cnt)
+		  FROM
+	      ( 
+			   SELECT COUNT(*) AS cnt
+				 FROM reservation
+				WHERE go_schedule = #{schedule_num}	
+				  AND go_seat_class = #{seat_class}
+				  AND cancellation = "N"
+				  AND state != "예약정보상이로 인한 취소"
+				  AND state != "스케쥴 취소로 인한 취소"			   
+				UNION ALL
+			   SELECT COUNT(*) AS cnt
+				 FROM reservation
+				WHERE back_schedule = #{schedule_num}	
+				  AND back_seat_class = #{seat_class}
+				  AND cancellation = "N"
+				  AND state != "예약정보상이로 인한 취소"
+				  AND state != "스케쥴 취소로 인한 취소"
+		  ) spare 	
+   </select>
+   
+   <!-- 전체석 조회 -->
+   <select id = "totalseat" resultType = "int">
+   	   SELECT 
+   		  <if test="seat_class == '비즈니스'">
+          first_capacity
+          </if>
+   		  <if test="seat_class == '이코노미'">
+          second_capacity
+          </if>
+		 FROM plane
+	  	WHERE plane_num = #{plane_num}
+   </select>
+   
+   <!-- 선택한 스케줄 조회 -->
+   <select id = "getschedule" resultType = "com.company.dto.SchedulePriceDto">
+   	   SELECT fs.de_country
+   	   		, fs.arr_country
+   	   		, fs.de_time
+   	   		, fs.arr_time
+   	   		, fs.flight_time
+   	   		, fs.de_date
+   	   		, fs.plane_num
+   	   		, p.price
+   	   		, p.seat_class
+   	     FROM flight_schedule fs
+   	     	  JOIN price p
+   	     	  USING(schedule_num)
+		WHERE schedule_num = #{schedule_num} 
+		  AND seat_class = #{seat_class}
+   </select>
+   
+   <!-- 중복 예약 확인 -->
+   <select id="beforereservation" resultType="int">
+		SELECT SUM(spare.cnt)
+		  FROM
+			 ( 
+			 	SELECT COUNT(*) AS cnt
+				  FROM reservation
+				 WHERE go_schedule = #{go_schedule}	
+				   AND email = #{email}
+				   AND cancellation = "N"
+				   AND state != "예약정보상이로 인한 취소"
+				   AND state != "스케쥴 취소로 인한 취소"			   
+				 UNION ALL
+			    SELECT COUNT(*) AS cnt
+				  FROM reservation
+				 WHERE back_schedule = #{back_schedule}
+				   AND email = #{email}	
+				   AND cancellation = "N"
+				   AND state != "예약정보상이로 인한 취소"
+				   AND state != "스케쥴 취소로 인한 취소"
+			 ) spare
+    </select>
+   
+   <!-- 예약 입력 - 왕복 -->
+   <insert id = "insertreservation" >
+   	   INSERT INTO reservation
+   	   (
+   	   		  email
+   	   		, go_schedule
+   	   		, back_schedule
+   	   		, go_seat_class
+   	   		, back_seat_class
+   	   	) 
+   	   	VALUES 
+   		(
+   			  #{email}
+   			, #{go_schedule}
+   			, #{back_schedule}
+   			, #{go_seat_class}
+   			, #{back_seat_class}
+   		)
+   </insert>
+   
+   <!-- 예약 입력 - 편도 -->
+   <insert id = "insertreservation2" >
+   	   INSERT INTO reservation
+   	   (
+   	   		  email
+   	   		, go_schedule
+   	   		, go_seat_class
+   	   	) 
+   	   	VALUES 
+   		(
+   			  #{email}
+   			, #{go_schedule}
+   			, #{go_seat_class}
+   		)
+   </insert>
+   
+   <!-- 예약 조회 -->
+   <select id = "reservationnumber" resultType = "com.company.dto.ReservationDto">
+   	   SELECT reserve_num
+   	   		, date
+   	   		, state
+   	   		, go_schedule
+   	   		, back_schedule 
+   	   		, go_seat_class
+   	   		, back_seat_class
+   	     FROM reservation 
+   	    WHERE email = #{email}
+   	      AND cancellation = 'N'
+   </select>
+   
+   <!-- 예약 상세 조회 - 예약 스케줄 조회 -->
+   <select id = "reservationinfo" resultType = "com.company.dto.ReservationScheduleDto">
+       SELECT fs.schedule_num
+       		, fs.de_country
+       		, fs.arr_country
+       		, fs.de_date
+       		, fs.de_time
+       		, fs.arr_time
+       		, fs.plane_num
+       		, p.seat_class
+       		, p.price
+         FROM flight_schedule fs
+         	  JOIN price p
+         	  USING (schedule_num)
+   		WHERE schedule_num = #{schedule_num} 
+   		  AND seat_class = #{seat_class}
+   </select>
+   
+   <!-- 예약 상세 조회 - 승객 정보 조회 -->
+   <select id = "reservationinfo2" resultType = "com.company.dto.UserReservationDto">
+   	   SELECT u.surname
+   	   		, u.name
+   	   		, u.pass_num
+   	   		, u.birthday
+   	   		, r.state 
+   		 FROM user u
+   		 	  JOIN reservation r
+   		 	  USING (email)  
+   		WHERE email = #{email} 
+   		  AND reserve_num =#{reserve_num}
+   </select>
+   
+   <!-- 예약 취소 -->
+   <update id = "deletereservation">
+	   UPDATE reservation
+	   	  SET cancellation = 'Y' 
+	    WHERE reserve_num = #{reserve_num}
+   </update>
+</mapper>
