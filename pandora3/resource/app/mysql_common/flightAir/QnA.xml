@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper 
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+    
+    <mapper namespace="QnA">
+    
+    <!-- 상담글 목록 조회  -->
+    <select id="selectQnAList" parameterType="ParameterMap" resultType="QnADto">
+		SELECT q.board_num
+			 , q.email
+			 , q.category
+			 , q.title
+			 , q.answer
+			 , q.date
+			 , u.user_name
+		  FROM qna q
+		  	   JOIN user u
+		  	   USING (email)
+         WHERE q.cancellation = "N"
+       	   <if test="@kr.co.ta9.pandora3.common.util.TextUtil@isNotEmpty(category)">
+           AND category LIKE CONCAT('%',#{category, jdbcType=VARCHAR}, '%')
+           </if>
+       	   <if test="@kr.co.ta9.pandora3.common.util.TextUtil@isNotEmpty(email)">
+           AND email LIKE CONCAT('%',#{email, jdbcType=VARCHAR}, '%')
+           </if> 
+         ORDER BY q.date
+    </select>  
+    
+    <!-- 선택글 조회  -->
+    <select id="answerQnAList" parameterType="ParameterMap" resultType="QnADto">
+		SELECT board_num
+			 , category
+			 , title
+			 , content
+			 , answer
+		  FROM qna
+         WHERE board_num = #{board_num}
+    </select>
+    
+    <!-- 답변 작성  -->
+    <update id="qnaAnswer">
+		UPDATE qna 
+		   SET answer = #{answer}
+		 WHERE board_num = #{board_num}
+	</update>
+	
+    </mapper>
+    

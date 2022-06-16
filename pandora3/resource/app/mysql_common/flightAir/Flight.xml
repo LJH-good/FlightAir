@@ -1,0 +1,195 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper 
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="Flight">
+	
+	<!-- 스케줄 목록 조회 -->
+	<select id="selectScheduleList" parameterType="ParameterMap" resultType="FlightScheduleDto">
+		SELECT schedule_num
+			 , de_country
+			 , arr_country
+			 , de_time
+			 , arr_time
+			 , flight_time
+			 , de_date
+			 , plane_num
+			 , state
+			 , add_date
+			 , recent_update
+		  FROM flight_schedule
+         WHERE 1 = 1
+           <if test="@kr.co.ta9.pandora3.common.util.TextUtil@isNotEmpty(schedule_num)">
+           AND schedule_num = #{schedule_num} 
+           </if>
+       	   <if test="@kr.co.ta9.pandora3.common.util.TextUtil@isNotEmpty(de_country)">
+           AND de_country LIKE CONCAT('%',#{de_country, jdbcType=VARCHAR}, '%')
+           </if>
+       	   <if test="@kr.co.ta9.pandora3.common.util.TextUtil@isNotEmpty(arr_country)">
+           AND arr_country LIKE CONCAT('%',#{arr_country, jdbcType=VARCHAR}, '%')
+           </if>
+         ORDER BY de_date
+    </select>
+    
+    <!-- 스케줄 예약 조회 -->
+    <select id="scheduleReserveList" parameterType="ParameterMap" resultType="ReservationUserDto">
+		SELECT r.reserve_num
+			 , r.date
+			 , r.state
+			 , r.go_schedule
+			 , r.back_schedule
+			 , r.go_seat_class
+			 , r.back_seat_class
+			 , u.user_name
+			 , u.email
+		  FROM reservation r 
+		  	   JOIN user u 
+		  	   USING (email)
+         WHERE r.cancellation = "N"
+           AND go_schedule = #{schedule_num}
+         	OR back_schedule = #{schedule_num}
+         ORDER BY date
+    </select>
+   
+   <!-- 가격 목록 조회 -->
+    <select id="priceList" parameterType="ParameterMap" resultType="PriceDto">
+		SELECT price_num
+			 , price
+			 , seat_class
+			 , schedule_num
+			 , add_date
+			 , recent_update
+		  FROM price
+         WHERE 1=1
+          <if test="@kr.co.ta9.pandora3.common.util.TextUtil@isNotEmpty(schedule_num)">
+           AND schedule_num LIKE CONCAT('%',#{schedule_num, jdbcType=VARCHAR}, '%')
+           </if>
+       	   <if test="@kr.co.ta9.pandora3.common.util.TextUtil@isNotEmpty(seat_class)">
+           AND seat_class LIKE CONCAT('%',#{seat_class, jdbcType=VARCHAR}, '%')
+           </if>
+         ORDER BY schedule_num
+    </select>    
+    
+    <!-- 가격 행 추가 -->
+    <insert id="insertPrice">
+    	INSERT INTO price
+    	(	 
+    		   price_num
+    		 , price
+    		 , seat_class
+    		 , schedule_num
+    	)
+    	VALUES
+    	(
+    		   #{price_num}
+    		 , #{price}
+    		 , #{seat_class}
+    		 , #{schedule_num}
+    	)
+    </insert>
+    
+    <!-- 가격 번호 가져오기 - 입력 시 자동 생성 -->
+    <select id="pricenumInsert" parameterType="ParameterMap" resultType="PriceDto">
+		SELECT price_num
+		  FROM price
+         ORDER BY add_date DESC
+         LIMIT 1
+    </select>
+    
+    <!-- 가격 행 수정 -->
+    <update id="updatePrice">
+    	UPDATE price
+    	   SET price = #{price}
+    		 , seat_class = #{seat_class}
+    		 , schedule_num = #{schedule_num}
+    		 , recent_update = CURRENT_TIMESTAMP 
+	     WHERE price_num = #{price_num}
+    </update>
+    
+    <!-- 가격 행 삭제 -->
+    <delete id="priceDelete">
+    	DELETE FROM price 
+    	 WHERE price_num = #{price_num}
+    </delete>
+    
+    <!-- 스케줄 번호 가져오기 - select option -->
+    <select id="getScheduleNum" parameterType="ParameterMap" resultType="FlightScheduleDto">
+		SELECT schedule_num
+	         , plane_num
+		  FROM flight_schedule
+    </select>   
+    
+    <!-- 스케줄 행 수정 -->
+    <update id="updateSchedule">
+    	UPDATE flight_schedule
+    	   SET de_country = #{de_country}
+    		 , arr_country = #{arr_country}
+    		 , de_time = #{de_time}
+    		 , arr_time = #{arr_time}
+    		 , flight_time = #{flight_time}
+    		 , de_date = #{de_date}
+    		 , plane_num = #{plane_num}
+    		 , state = #{state}
+    		 , recent_update = CURRENT_TIMESTAMP 
+	     WHERE schedule_num = #{schedule_num}
+    </update>
+ 
+ 	<!-- 스케줄 행 추가 -->
+    <insert id="insertSchedule" parameterType="PlaneDto">
+    	INSERT INTO flight_schedule
+    	(	 
+    		   schedule_num
+    		 , de_country
+    		 , arr_country
+    		 , de_time
+    		 , arr_time
+    		 , flight_time
+    		 , de_date
+    		 , plane_num
+    		 , state
+    	)
+       VALUES
+       ( 
+               #{schedule_num}
+    		 , #{de_country}
+    		 , #{arr_country}
+    		 , #{de_time}
+    		 , #{arr_time}
+    		 , #{flight_time}
+    		 , #{de_date}
+    		 , #{plane_num}
+    		 , #{state}
+    	)
+    </insert>  
+    
+    <!-- 스케줄 행 삭제  -->
+    <delete id="scheduleDelete">
+    	DELETE FROM flight_schedule 
+    	 WHERE schedule_num = #{schedule_num}
+    </delete>
+    
+    <!-- 스케줄 번호 가져오기 - 행 추가 시 자동생성 -->
+    <select id="schedulenumInsert" parameterType="ParameterMap" resultType="FlightScheduleDto">
+		SELECT schedule_num
+		  FROM flight_schedule
+         ORDER BY add_date DESC
+         LIMIT 1
+    </select>
+    
+    <!-- 항공기 번호 가져오기 - select option -->
+     <select id="getSelectPlane" parameterType="ParameterMap" resultType="PlaneDto">
+		SELECT plane_num
+		  FROM plane
+    </select>
+    
+    <!-- 가격 스케줄/좌석 중복확인  -->
+    <select id="overlapPrice" parameterType="ParameterMap" resultType="PriceDto">
+    	SELECT schedule_num
+    		 , seat_class 
+    	  FROM price
+    	 WHERE schedule_num = #{schedule_num}
+    	   AND seat_class = #{seat_class}
+    </select>  
+    
+</mapper>
