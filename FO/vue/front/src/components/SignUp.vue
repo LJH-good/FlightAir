@@ -173,12 +173,9 @@ export default {
       if(email == ""){
         this.emailMsg = '이메일을 작성해주세요';
         this.availableEmail = true;
+        return false;
       } else if(!idTest.test(email)) {
         this.emailMsg = '이메일 형식을 확인해주세요\nex) email@naver.com';
-        this.availableEmail = true;
-        return false;
-      } else if (email.length > 91) {
-        this.emailMsg = '이메일은 최대 90자리까지 입력 가능합니다';
         this.availableEmail = true;
         return false;
       }
