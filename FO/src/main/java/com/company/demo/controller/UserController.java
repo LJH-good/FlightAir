@@ -117,7 +117,7 @@ public class UserController {
 			}
 			String host = "smtp.naver.com";
 			final String user = "jh970105@naver.com";
-			final String password = "myonion1!";
+			final String password = "!";
 			String to = dto.getEmail();
 			Properties props = new Properties();
 			props.put("mail.smtp.host", host);
