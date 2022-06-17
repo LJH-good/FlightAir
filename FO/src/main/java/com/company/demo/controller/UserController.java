@@ -116,7 +116,7 @@ public class UserController {
 				content += (int) (Math.random() * 10);
 			}
 			String host = "smtp.naver.com";
-			final String user = "jh970105@naver.com";
+			final String user = "!";
 			final String password = "!";
 			String to = dto.getEmail();
 			Properties props = new Properties();
